@@ -55,28 +55,59 @@ impl Cradle {
         x.is_digit(10)
     }
 
-    fn get_name(&self) -> char {
+    fn get_name(&mut self) -> char {
         if !self.is_alpha(&self.lookahead) {
             self.expected(String::from("Name"));
         }
 
-        self.lookahead
+        let name = self.lookahead;
+        self.get_char();
+        name
     }
 
-    fn get_num(&self) -> char {
+    fn get_num(&mut self) -> char {
         if !self.is_digit(&self.lookahead) {
             self.expected(String::from("Integer"));
         }
 
-        self.lookahead
+        let num = self.lookahead;
+        self.get_char();
+        num
     }
 
     fn emit(&self, s: String) {
         print!("{}", s);
     }
 
-    fn emit_line(&self, s: String) {
+    fn emit_line(&mut self, s: String) {
         println!("{}", s);
+    }
+
+    fn term(&mut self) {
+        let num = self.get_num();
+        self.emit_line(format!("MOVE #{},D0", num));
+    }
+
+    fn add(&mut self) {
+        self.match_char(&'+');
+        self.term();
+        self.emit_line(String::from("ADD D1,D0"));
+    }
+
+    fn subtract(&mut self) {
+        self.match_char(&'-');
+        self.term();
+        self.emit_line(String::from("ADD D1,D0"));
+    }
+
+    fn expression(&mut self) {
+        self.term();
+        self.emit_line(String::from("MOVE D0,D1"));
+        match self.lookahead {
+            '+' => self.add(),
+            '-' => self.subtract(),
+            _ => self.expected(String::from("Operator")),
+        }
     }
 }
 
@@ -84,5 +115,6 @@ fn main() -> io::Result<()> {
     let mut cradle = Cradle::new();
     cradle.get_char()?;
     println!("{:?}", cradle);
+    cradle.expression();
     Ok(())
 }
