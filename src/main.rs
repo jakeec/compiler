@@ -1,21 +1,42 @@
 use std::io;
 use std::io::Read;
 
-fn read() -> io::Result<char> {
-    let mut temp_buf: String = String::new();
-    std::io::stdin().read_line(&mut temp_buf)?;
-    let c: char = temp_buf.chars().collect::<Vec<char>>()[0];
-    Ok(c)
+#[derive(Debug)]
+struct Cradle {
+    lookahead: char,
 }
 
-fn get_char<'a>(buffer: &'a mut char) -> io::Result<()> {
-    *buffer = read().unwrap();
-    Ok(())
+impl Cradle {
+    fn new() -> Self {
+        Self { lookahead: '0' }
+    }
+
+    fn read(&self) -> io::Result<char> {
+        let mut temp_buf: String = String::new();
+        std::io::stdin().read_line(&mut temp_buf)?;
+        let c: char = temp_buf.chars().collect::<Vec<char>>()[0];
+        Ok(c)
+    }
+    fn get_char(&mut self) -> io::Result<()> {
+        self.lookahead = self.read().unwrap();
+        Ok(())
+    }
+    fn error(&self, message: String) {
+        println!("\nError: {}", message);
+    }
+    fn abort(&self, message: String) {
+        self.error(message);
+        panic!("^^^^^^^");
+    }
+    fn expected(&self, expected: String) {
+        self.abort(format!("{} expected", expected));
+    }
+    fn match_char(&mut self, x: &char) {}
 }
 
 fn main() -> io::Result<()> {
-    let mut lookahead: char = '0';
-    get_char(&mut lookahead)?;
-    println!("{}", lookahead);
+    let mut cradle = Cradle::new();
+    cradle.get_char()?;
+    println!("{:?}", cradle);
     Ok(())
 }
