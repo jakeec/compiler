@@ -26,7 +26,10 @@ impl Cradle {
     fn read(&mut self) -> io::Result<()> {
         let mut temp_buf: String = String::new();
         std::io::stdin().read_line(&mut temp_buf)?;
-        self.source = temp_buf.chars().collect::<Vec<char>>();
+        self.source = temp_buf
+            .chars()
+            .filter(|c| c != &'\n')
+            .collect::<Vec<char>>();
         Ok(())
     }
 
@@ -34,8 +37,12 @@ impl Cradle {
         if self.source.len() < 1 {
             self.read().unwrap();
         }
-        self.lookahead = Some(self.source[self.counter]);
+        if self.counter >= self.source.len() - 1 {
+            self.lookahead = None;
+            return Ok(());
+        }
         self.counter += 1;
+        self.lookahead = Some(self.source[self.counter]);
         Ok(())
     }
 
@@ -76,7 +83,7 @@ impl Cradle {
         }
 
         let name = self.lookahead.unwrap();
-        self.get_char();
+        self.get_char().unwrap();
         name
     }
 
@@ -86,7 +93,7 @@ impl Cradle {
         }
 
         let num = self.lookahead;
-        self.get_char();
+        self.get_char().unwrap();
         num.unwrap()
     }
 
@@ -100,9 +107,7 @@ impl Cradle {
 
     fn term(&mut self) {
         let num = self.get_num();
-        println!("{}", num);
         self.emit_line(format!("MOVE #{},D0", num));
-        self.get_char();
     }
 
     fn add(&mut self) {
@@ -115,16 +120,23 @@ impl Cradle {
         self.match_char(&'-');
         self.term();
         self.emit_line(String::from("SUB D1,D0"));
-        self.emit_line(String::from("NEG D0"));
+        self.emit_line(String::from("NEG D1"));
     }
 
     fn expression(&mut self) {
-        self.term();
-        self.emit_line(String::from("MOVE D0,D1"));
-        match self.lookahead.unwrap() {
-            '+' => self.add(),
-            '-' => self.subtract(),
-            _ => self.expected(String::from("Operator")),
+        while self.lookahead != None {
+            match self.lookahead {
+                Some(c) => match c {
+                    '+' => self.add(),
+                    '-' => self.subtract(),
+                    _ => {
+                        self.term();
+                        self.emit_line(String::from("MOVE D0,D1"));
+                        self.expression();
+                    }
+                },
+                None => (),
+            }
         }
     }
 }
