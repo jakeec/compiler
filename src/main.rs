@@ -4,23 +4,38 @@ use std::io::Read;
 
 #[derive(Debug)]
 struct Cradle {
-    lookahead: char,
+    lookahead: Option<char>,
+    source: Vec<char>,
+    counter: usize,
 }
 
 impl Cradle {
     fn new() -> Self {
-        Self { lookahead: '0' }
+        Self {
+            lookahead: None,
+            source: Vec::new(),
+            counter: 0,
+        }
     }
 
-    fn read(&self) -> io::Result<char> {
+    fn init(&mut self) {
+        self.read();
+        self.lookahead = Some(self.source[self.counter]);
+    }
+
+    fn read(&mut self) -> io::Result<()> {
         let mut temp_buf: String = String::new();
         std::io::stdin().read_line(&mut temp_buf)?;
-        let c: char = temp_buf.chars().collect::<Vec<char>>()[0];
-        Ok(c)
+        self.source = temp_buf.chars().collect::<Vec<char>>();
+        Ok(())
     }
 
     fn get_char(&mut self) -> io::Result<()> {
-        self.lookahead = self.read().unwrap();
+        if self.source.len() < 1 {
+            self.read().unwrap();
+        }
+        self.lookahead = Some(self.source[self.counter]);
+        self.counter += 1;
         Ok(())
     }
 
@@ -38,7 +53,7 @@ impl Cradle {
     }
 
     fn match_char(&mut self, x: &char) -> io::Result<()> {
-        if self.lookahead == *x {
+        if self.lookahead.unwrap() == *x {
             self.get_char()?;
         } else {
             self.expected(format!("\"{}\"", x));
@@ -56,23 +71,23 @@ impl Cradle {
     }
 
     fn get_name(&mut self) -> char {
-        if !self.is_alpha(&self.lookahead) {
+        if !self.is_alpha(&self.lookahead.unwrap()) {
             self.expected(String::from("Name"));
         }
 
-        let name = self.lookahead;
+        let name = self.lookahead.unwrap();
         self.get_char();
         name
     }
 
     fn get_num(&mut self) -> char {
-        if !self.is_digit(&self.lookahead) {
+        if !self.is_digit(&self.lookahead.unwrap()) {
             self.expected(String::from("Integer"));
         }
 
         let num = self.lookahead;
         self.get_char();
-        num
+        num.unwrap()
     }
 
     fn emit(&self, s: String) {
@@ -85,7 +100,9 @@ impl Cradle {
 
     fn term(&mut self) {
         let num = self.get_num();
+        println!("{}", num);
         self.emit_line(format!("MOVE #{},D0", num));
+        self.get_char();
     }
 
     fn add(&mut self) {
@@ -97,13 +114,14 @@ impl Cradle {
     fn subtract(&mut self) {
         self.match_char(&'-');
         self.term();
-        self.emit_line(String::from("ADD D1,D0"));
+        self.emit_line(String::from("SUB D1,D0"));
+        self.emit_line(String::from("NEG D0"));
     }
 
     fn expression(&mut self) {
         self.term();
         self.emit_line(String::from("MOVE D0,D1"));
-        match self.lookahead {
+        match self.lookahead.unwrap() {
             '+' => self.add(),
             '-' => self.subtract(),
             _ => self.expected(String::from("Operator")),
@@ -113,8 +131,7 @@ impl Cradle {
 
 fn main() -> io::Result<()> {
     let mut cradle = Cradle::new();
-    cradle.get_char()?;
-    println!("{:?}", cradle);
+    cradle.init();
     cradle.expression();
     Ok(())
 }
