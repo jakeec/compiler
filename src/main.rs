@@ -28,7 +28,7 @@ impl Cradle {
         std::io::stdin().read_line(&mut temp_buf)?;
         self.source = temp_buf
             .chars()
-            .filter(|c| c != &'\n')
+            .filter(|c| ![&'\n', &'\r'].contains(&c))
             .collect::<Vec<char>>();
         Ok(())
     }
