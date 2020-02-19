@@ -48,7 +48,8 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 
     fn error(&mut self, message: String) {
-        self.writer.write(format!("\nError: {}", message));
+        self.writer
+            .writeln(format!("\n\x1b[0;31mError: {}\x1b[0m", message));
     }
 
     fn abort(&mut self, message: String) {
@@ -174,7 +175,7 @@ mod cradle_tests {
     #[test]
     fn given_add_operation_output_add_instructions() {
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("1+2")));
+        reader.read(ReaderArg::Raw(String::from("1+2"))).unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Cradle::new(reader, &mut writer);
         cradle.init();
@@ -190,7 +191,7 @@ mod cradle_tests {
     #[test]
     fn given_subtract_operation_output_subtract_instructions() {
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("1-2")));
+        reader.read(ReaderArg::Raw(String::from("1-2"))).unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Cradle::new(reader, &mut writer);
         cradle.init();
@@ -206,7 +207,9 @@ mod cradle_tests {
     #[test]
     fn given_multiple_operators_output_correct_assembly() {
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("1-2+3-4+7")));
+        reader
+            .read(ReaderArg::Raw(String::from("1-2+3-4+7")))
+            .unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Cradle::new(reader, &mut writer);
         cradle.init();
