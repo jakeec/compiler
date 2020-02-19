@@ -201,10 +201,14 @@ impl AssemblyInterpreter {
     }
 
     fn eval(&mut self, input: String) -> Result<(), AssemblyInterpreterError> {
+        let input = input.chars().collect::<Vec<char>>();
+        let input: String = input[1..input.len()].iter().collect();
         let instructions = input
             .split("\n")
             .map(|s| String::from(s))
             .collect::<Vec<String>>();
+
+        println!("{:?}", instructions);
 
         for instruction in instructions {
             self.process_instruction(instruction);
@@ -214,7 +218,6 @@ impl AssemblyInterpreter {
     }
 
     fn process_instruction(&mut self, instruction: String) -> Result<(), AssemblyInterpreterError> {
-        println!("{}", instruction);
         let mut opcode = String::new();
         let mut instruction: Vec<char> = instruction.chars().collect();
         let mut index = 0;
@@ -240,10 +243,13 @@ impl AssemblyInterpreter {
     }
 
     fn move_op(&mut self, rands: &[char]) {
+        println!("{:?}", rands);
+
         use std::convert::TryInto;
 
         let mut temp: isize = 0;
         let mut i = 0;
+        let mut arg_pos = 0;
         for _ in 0..rands.len() {
             if i >= rands.len() {
                 break;
@@ -253,15 +259,33 @@ impl AssemblyInterpreter {
                     temp = (rands[i + 1].to_digit(10).unwrap()).try_into().unwrap();
                     i += 2;
                 }
-                ',' => i += 1,
-                'D' => {
-                    match rands[i + 1] {
-                        '0' => self.d0 = Some(temp),
-                        '1' => self.d1 = Some(temp),
-                        n => panic!("Unknown register D{}", n),
-                    }
-                    i += 2;
+                ',' => {
+                    arg_pos += 1;
+                    i += 1;
                 }
+                '-' => match &rands[i + 1..i + 5] {
+                    &['(', 'S', 'P', ')'] => (),
+                    x => panic!("Unexpected stack operation: {:?}", x),
+                },
+                'D' => match arg_pos {
+                    0 => {
+                        match rands[i + 1] {
+                            '0' => temp = self.d0.unwrap(),
+                            '1' => temp = self.d1.unwrap(),
+                            n => panic!("Unknown register D{}", n),
+                        }
+                        i += 2;
+                    }
+                    1 => {
+                        match rands[i + 1] {
+                            '0' => self.d0 = Some(temp),
+                            '1' => self.d1 = Some(temp),
+                            n => panic!("Unknown register D{}", n),
+                        }
+                        i += 2;
+                    }
+                    x => panic!("Invalid argument position: {}", x),
+                },
                 x => panic!("Not implemented! {}", x),
             }
         }
@@ -289,14 +313,14 @@ mod assembly_interpreter_tests {
     fn given_input_split_into_instructions() {
         let mut asm_interp = AssemblyInterpreter::new();
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("1"))).unwrap();
+        reader.read(ReaderArg::Raw(String::from("1+2"))).unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Cradle::new(reader, &mut writer);
         cradle.init();
 
         cradle.expression();
 
-        asm_interp.eval(writer.output.replace("\n", ""));
+        asm_interp.eval(writer.output);
         assert!(false);
     }
 }
