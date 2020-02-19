@@ -193,7 +193,19 @@ fn main() -> io::Result<()> {
 mod cradle_tests {
     use super::*;
     use reader::TestReader;
+    use std::fs;
     use writer::TestWriter;
+
+    fn output(index: usize) -> String {
+        let mut outputs = fs::read_to_string("./test_data/assembly_outputs.txt")
+            .unwrap()
+            .replace("\r", "");
+        let outputs = outputs
+            .split("\n[[[]]]")
+            .map(|s| String::from(s))
+            .collect::<Vec<String>>();
+        String::from(&outputs[index])
+    }
 
     #[test]
     fn given_single_term_expression_output_move_instruction() {
@@ -205,7 +217,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(String::from("\nMOVE #1,D0"), writer.output);
+        assert_eq!(output(0), writer.output);
     }
 
     #[test]
@@ -218,10 +230,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nADD (SP)+,D0"),
-            writer.output
-        );
+        assert_eq!(output(1), writer.output);
     }
 
     #[test]
@@ -234,10 +243,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0"),
-            writer.output
-        );
+        assert_eq!(output(2), writer.output);
     }
 
     #[test]
@@ -252,10 +258,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0\nMOVE D0,-(SP)\nMOVE #3,D0\nADD (SP)+,D0\nMOVE D0,-(SP)\nMOVE #4,D0\nSUB (SP)+,D0\nNEG D0\nMOVE D0,-(SP)\nMOVE #7,D0\nADD (SP)+,D0"),
-            writer.output
-        );
+        assert_eq!(output(3), writer.output);
     }
 
     #[test]
@@ -268,10 +271,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMULS (SP)+,D0"),
-            writer.output
-        );
+        assert_eq!(output(4), writer.output);
     }
 
     #[test]
@@ -284,10 +284,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMOVE (SP)+,D1\nDIVS D1,D0"),
-            writer.output
-        );
+        assert_eq!(output(5), writer.output);
     }
 
     #[test]
@@ -300,10 +297,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nADD (SP)+,D0"),
-            writer.output
-        );
+        assert_eq!(output(6), writer.output);
     }
 
     #[test]
@@ -318,9 +312,6 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nADD (SP)+,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMOVE D0,-(SP)\nMOVE #4,D0\nADD (SP)+,D0\nMOVE D0,-(SP)\nMOVE #5,D0\nMOVE D0,-(SP)\nMOVE #6,D0\nSUB (SP)+,D0\nNEG D0\nADD (SP)+,D0\nMOVE (SP)+,D1\nDIVS D1,D0"),
-            writer.output
-        );
+        assert_eq!(output(7), writer.output);
     }
 }
