@@ -205,7 +205,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(String::from("\nMOVE #1,D0\nMOVE D0,-(SP)"), writer.output);
+        assert_eq!(String::from("\nMOVE #1,D0"), writer.output);
     }
 
     #[test]
@@ -253,7 +253,7 @@ mod cradle_tests {
         cradle.expression();
 
         assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0\nMOVE #3,D0\nADD (SP)+,D0\nMOVE #4,D0\nSUB (SP)+,D0\nNEG D0\nMOVE #7,D0\nADD (SP)+,D0"),
+            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0\nMOVE D0,-(SP)\nMOVE #3,D0\nADD (SP)+,D0\nMOVE D0,-(SP)\nMOVE #4,D0\nSUB (SP)+,D0\nNEG D0\nMOVE D0,-(SP)\nMOVE #7,D0\nADD (SP)+,D0"),
             writer.output
         );
     }
@@ -269,7 +269,7 @@ mod cradle_tests {
         cradle.expression();
 
         assert_eq!(
-            String::from("\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMULS (SP)+,D0\nMOVE D0,-(SP)"),
+            String::from("\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMULS (SP)+,D0"),
             writer.output
         );
     }
@@ -285,9 +285,7 @@ mod cradle_tests {
         cradle.expression();
 
         assert_eq!(
-            String::from(
-                "\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMOVE (SP)+,D1\nDIVS D1,D0\nMOVE D0,-(SP)"
-            ),
+            String::from("\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMOVE (SP)+,D1\nDIVS D1,D0"),
             writer.output
         );
     }
