@@ -289,4 +289,20 @@ mod cradle_tests {
             writer.output
         );
     }
+
+    #[test]
+    fn given_parentheses_output_correct_assembly() {
+        let mut reader = TestReader::new();
+        reader.read(ReaderArg::Raw(String::from("(1+2)"))).unwrap();
+        let mut writer = TestWriter::new();
+        let mut cradle = Cradle::new(reader, &mut writer);
+        cradle.init();
+
+        cradle.expression();
+
+        assert_eq!(
+            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nADD (SP)+,D0"),
+            writer.output
+        );
+    }
 }
