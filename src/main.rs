@@ -179,6 +179,45 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 }
 
+struct AssemblyInterpreter {
+    d0: Option<isize>,
+    d1: Option<isize>,
+    stack: Vec<isize>,
+    output: Option<isize>,
+}
+
+enum AssemblyInterpreterError {
+    Unexpected,
+}
+
+impl AssemblyInterpreter {
+    fn new() -> Self {
+        Self {
+            d0: None,
+            d1: None,
+            stack: Vec::new(),
+            output: None,
+        }
+    }
+
+    fn eval(&mut self, input: String) -> Result<(), AssemblyInterpreterError> {
+        let instructions = input
+            .split("\n")
+            .map(|s| String::from(s))
+            .collect::<Vec<String>>();
+
+        for instruction in instructions {
+            self.process_instruction(instruction);
+        }
+
+        Ok(())
+    }
+
+    fn process_instruction(&self, instruction: String) -> Result<(), AssemblyInterpreterError> {
+        Ok(())
+    }
+}
+
 fn main() -> io::Result<()> {
     let mut reader = StdinReader::new();
     reader.read(ReaderArg::None).unwrap();
@@ -187,6 +226,29 @@ fn main() -> io::Result<()> {
     cradle.init();
     cradle.expression();
     Ok(())
+}
+
+#[cfg(test)]
+mod assembly_interpreter_tests {
+    use super::*;
+    use reader::TestReader;
+    use std::fs;
+    use writer::TestWriter;
+
+    #[test]
+    fn given_input_split_into_instructions() {
+        let mut asm_interp = AssemblyInterpreter::new();
+        let mut reader = TestReader::new();
+        reader.read(ReaderArg::Raw(String::from("1"))).unwrap();
+        let mut writer = TestWriter::new();
+        let mut cradle = Cradle::new(reader, &mut writer);
+        cradle.init();
+
+        cradle.expression();
+
+        asm_interp.eval(writer.output.replace("\n", ""));
+        assert!(false);
+    }
 }
 
 #[cfg(test)]
