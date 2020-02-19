@@ -305,4 +305,22 @@ mod cradle_tests {
             writer.output
         );
     }
+
+    #[test]
+    fn given_complex_arithmetic_output_correct_assembly() {
+        let mut reader = TestReader::new();
+        reader
+            .read(ReaderArg::Raw(String::from("(1+2)/((3+4)+(5-6))")))
+            .unwrap();
+        let mut writer = TestWriter::new();
+        let mut cradle = Cradle::new(reader, &mut writer);
+        cradle.init();
+
+        cradle.expression();
+
+        assert_eq!(
+            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nADD (SP)+,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMOVE D0,-(SP)\nMOVE #4,D0\nADD (SP)+,D0\nMOVE D0,-(SP)\nMOVE #5,D0\nMOVE D0,-(SP)\nMOVE #6,D0\nSUB (SP)+,D0\nNEG D0\nADD (SP)+,D0\nMOVE (SP)+,D1\nDIVS D1,D0"),
+            writer.output
+        );
+    }
 }
