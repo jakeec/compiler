@@ -1,113 +1,8 @@
-use regex::Regex;
+mod reader;
+mod writer;
+use reader::{Reader, ReaderArg, StdinReader};
 use std::io;
-use std::io::Read;
-use std::string::String;
-
-enum ReaderArg {
-    Raw(String),
-    FilePath(String),
-    None,
-}
-
-struct StdinReader {
-    buffer: Vec<char>,
-}
-
-struct TestReader {
-    buffer: Vec<char>,
-}
-
-impl StdinReader {
-    fn new() -> Self {
-        Self { buffer: Vec::new() }
-    }
-}
-
-impl TestReader {
-    fn new() -> Self {
-        Self { buffer: Vec::new() }
-    }
-}
-
-trait Reader {
-    fn read(&mut self, arg: ReaderArg) -> io::Result<()>;
-    fn get_buffer(&self) -> Vec<char>;
-}
-
-impl Reader for StdinReader {
-    fn read(&mut self, arg: ReaderArg) -> io::Result<()> {
-        let mut temp_buf: String = String::new();
-        std::io::stdin().read_line(&mut temp_buf)?;
-        self.buffer = temp_buf
-            .chars()
-            .filter(|c| ![&'\n', &'\r'].contains(&c))
-            .collect::<Vec<char>>();
-
-        Ok(())
-    }
-
-    fn get_buffer(&self) -> Vec<char> {
-        self.buffer.clone()
-    }
-}
-
-impl Reader for TestReader {
-    fn read(&mut self, arg: ReaderArg) -> io::Result<()> {
-        match arg {
-            ReaderArg::Raw(s) => {
-                self.buffer = s
-                    .chars()
-                    .filter(|c| ![&'\n', &'\r'].contains(&c))
-                    .collect::<Vec<char>>();
-            }
-            _ => panic!("Invalid argument!"),
-        }
-
-        Ok(())
-    }
-
-    fn get_buffer(&self) -> Vec<char> {
-        self.buffer.clone()
-    }
-}
-
-struct StdoutWriter {}
-struct TestWriter {
-    output: String,
-}
-
-impl TestWriter {
-    fn new() -> Self {
-        Self {
-            output: String::new(),
-        }
-    }
-}
-
-trait Writer {
-    fn write(&mut self, output: String) {}
-    fn writeln(&mut self, output: String) {}
-}
-
-impl Writer for StdoutWriter {
-    fn write(&mut self, output: String) {
-        print!("{}", output);
-    }
-
-    fn writeln(&mut self, output: String) {
-        println!("{}", output);
-    }
-}
-
-impl Writer for TestWriter {
-    fn write(&mut self, output: String) {
-        self.output = format!("{}{}", self.output, output);
-    }
-
-    fn writeln(&mut self, output: String) {
-        self.output = format!("{}\n{}", self.output, output);
-    }
-}
+use writer::{StdoutWriter, Writer};
 
 #[derive(Debug)]
 struct Cradle<'a, R: Reader, W: Writer> {
@@ -130,7 +25,7 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 
     fn init(&mut self) {
-        self.read();
+        self.read().unwrap();
         self.lookahead = Some(self.source[self.counter]);
     }
 
@@ -217,13 +112,13 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 
     fn add(&mut self) {
-        self.match_char(&'+');
+        self.match_char(&'+').unwrap();
         self.term();
         self.emit_line(String::from("ADD D1,D0"));
     }
 
     fn subtract(&mut self) {
-        self.match_char(&'-');
+        self.match_char(&'-').unwrap();
         self.term();
         self.emit_line(String::from("SUB D1,D0"));
         self.emit_line(String::from("NEG D1"));
@@ -249,7 +144,7 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
 
 fn main() -> io::Result<()> {
     let mut reader = StdinReader::new();
-    reader.read(ReaderArg::None);
+    reader.read(ReaderArg::None).unwrap();
     let mut writer = StdoutWriter {};
     let mut cradle = Cradle::new(reader, &mut writer);
     cradle.init();
@@ -258,13 +153,15 @@ fn main() -> io::Result<()> {
 }
 
 #[cfg(test)]
-mod CradleTests {
+mod cradle_tests {
     use super::*;
+    use reader::TestReader;
+    use writer::TestWriter;
 
     #[test]
     fn given_single_term_expression_output_move_instruction() {
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("1")));
+        reader.read(ReaderArg::Raw(String::from("1"))).unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Cradle::new(reader, &mut writer);
         cradle.init();
