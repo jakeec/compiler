@@ -108,13 +108,13 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 
     fn multiply(&mut self) {
-        self.match_char(&'*');
+        self.match_char(&'*').unwrap();
         self.factor();
         self.emit_line(String::from("MULS (SP)+,D0"));
     }
 
     fn divide(&mut self) {
-        self.match_char(&'/');
+        self.match_char(&'/').unwrap();
         self.factor();
         self.emit_line(String::from("MOVE (SP)+,D1"));
         self.emit_line(String::from("DIVS D1,D0"));
@@ -138,8 +138,14 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 
     fn factor(&mut self) {
-        let factor = self.get_num();
-        self.emit_line(format!("MOVE #{},D0", factor));
+        if self.lookahead.unwrap() == '(' {
+            self.match_char(&'(');
+            self.expression();
+            self.match_char(&')');
+        } else {
+            let factor = self.get_num();
+            self.emit_line(format!("MOVE #{},D0", factor));
+        }
     }
 
     fn add(&mut self) {
@@ -156,14 +162,15 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     }
 
     fn expression(&mut self) {
-        while self.lookahead != None {
+        self.term();
+        while self.lookahead != None && ['+', '-'].contains(&self.lookahead.unwrap()) {
+            self.emit_line(String::from("MOVE D0,-(SP)"));
             match self.lookahead {
                 Some(c) => match c {
                     '+' => self.add(),
                     '-' => self.subtract(),
                     _ => {
                         self.term();
-                        self.emit_line(String::from("MOVE D0,-(SP)"));
                     }
                 },
                 None => (),
@@ -247,6 +254,40 @@ mod cradle_tests {
 
         assert_eq!(
             String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0\nMOVE #3,D0\nADD (SP)+,D0\nMOVE #4,D0\nSUB (SP)+,D0\nNEG D0\nMOVE #7,D0\nADD (SP)+,D0"),
+            writer.output
+        );
+    }
+
+    #[test]
+    fn given_multiply_output_multiply_assembly() {
+        let mut reader = TestReader::new();
+        reader.read(ReaderArg::Raw(String::from("2*3"))).unwrap();
+        let mut writer = TestWriter::new();
+        let mut cradle = Cradle::new(reader, &mut writer);
+        cradle.init();
+
+        cradle.expression();
+
+        assert_eq!(
+            String::from("\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMULS (SP)+,D0\nMOVE D0,-(SP)"),
+            writer.output
+        );
+    }
+
+    #[test]
+    fn given_divide_output_divide_assembly() {
+        let mut reader = TestReader::new();
+        reader.read(ReaderArg::Raw(String::from("2/3"))).unwrap();
+        let mut writer = TestWriter::new();
+        let mut cradle = Cradle::new(reader, &mut writer);
+        cradle.init();
+
+        cradle.expression();
+
+        assert_eq!(
+            String::from(
+                "\nMOVE #2,D0\nMOVE D0,-(SP)\nMOVE #3,D0\nMOVE (SP)+,D1\nDIVS D1,D0\nMOVE D0,-(SP)"
+            ),
             writer.output
         );
     }
