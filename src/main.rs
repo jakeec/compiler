@@ -109,15 +109,15 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
 
     fn multiply(&mut self) {
         self.match_char(&'*');
-        self.emit_line(String::from("MULS (SP)+,D0"));
         self.factor();
+        self.emit_line(String::from("MULS (SP)+,D0"));
     }
 
     fn divide(&mut self) {
         self.match_char(&'/');
+        self.factor();
         self.emit_line(String::from("MOVE (SP)+,D1"));
         self.emit_line(String::from("DIVS D1,D0"));
-        self.factor();
     }
 
     fn term(&mut self) {
@@ -125,15 +125,12 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
         // self.emit_line(format!("MOVE #{},D0", num));
         self.factor();
         if self.lookahead != None && ['*', '/'].contains(&self.lookahead.unwrap()) {
+            self.emit_line(String::from("MOVE D0,-(SP)"));
             match self.lookahead {
                 Some(c) => match c {
                     '*' => self.multiply(),
                     '/' => self.divide(),
-                    _ => {
-                        self.term();
-                        self.emit_line(String::from("MOVE D0,-(SP)"));
-                        self.expression();
-                    }
+                    _ => self.expected(String::from("Operator")),
                 },
                 None => (),
             }
@@ -167,7 +164,6 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
                     _ => {
                         self.term();
                         self.emit_line(String::from("MOVE D0,-(SP)"));
-                        self.expression();
                     }
                 },
                 None => (),
