@@ -115,14 +115,14 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
     fn add(&mut self) {
         self.match_char(&'+').unwrap();
         self.term();
-        self.emit_line(String::from("ADD D1,D0"));
+        self.emit_line(String::from("ADD (SP)+,D0"));
     }
 
     fn subtract(&mut self) {
         self.match_char(&'-').unwrap();
         self.term();
-        self.emit_line(String::from("SUB D1,D0"));
-        self.emit_line(String::from("NEG D1"));
+        self.emit_line(String::from("SUB (SP)+,D0"));
+        self.emit_line(String::from("NEG D0"));
     }
 
     fn expression(&mut self) {
@@ -133,7 +133,7 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
                     '-' => self.subtract(),
                     _ => {
                         self.term();
-                        self.emit_line(String::from("MOVE D0,D1"));
+                        self.emit_line(String::from("MOVE D0,-(SP)"));
                         self.expression();
                     }
                 },
@@ -169,7 +169,7 @@ mod cradle_tests {
 
         cradle.expression();
 
-        assert_eq!(String::from("\nMOVE #1,D0\nMOVE D0,D1"), writer.output);
+        assert_eq!(String::from("\nMOVE #1,D0\nMOVE D0,-(SP)"), writer.output);
     }
 
     #[test]
@@ -183,7 +183,7 @@ mod cradle_tests {
         cradle.expression();
 
         assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,D1\nMOVE #2,D0\nADD D1,D0"),
+            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nADD (SP)+,D0"),
             writer.output
         );
     }
@@ -199,7 +199,7 @@ mod cradle_tests {
         cradle.expression();
 
         assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,D1\nMOVE #2,D0\nSUB D1,D0\nNEG D1"),
+            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0"),
             writer.output
         );
     }
@@ -217,7 +217,7 @@ mod cradle_tests {
         cradle.expression();
 
         assert_eq!(
-            String::from("\nMOVE #1,D0\nMOVE D0,D1\nMOVE #2,D0\nSUB D1,D0\nNEG D1\nMOVE #3,D0\nADD D1,D0\nMOVE #4,D0\nSUB D1,D0\nNEG D1\nMOVE #7,D0\nADD D1,D0"),
+            String::from("\nMOVE #1,D0\nMOVE D0,-(SP)\nMOVE #2,D0\nSUB (SP)+,D0\nNEG D0\nMOVE #3,D0\nADD (SP)+,D0\nMOVE #4,D0\nSUB (SP)+,D0\nNEG D0\nMOVE #7,D0\nADD (SP)+,D0"),
             writer.output
         );
     }
