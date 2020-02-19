@@ -264,7 +264,10 @@ impl AssemblyInterpreter {
                     i += 1;
                 }
                 '-' => match &rands[i + 1..i + 5] {
-                    &['(', 'S', 'P', ')'] => (),
+                    &['(', 'S', 'P', ')'] => {
+                        self.stack.push(temp);
+                        i += 5;
+                    }
                     x => panic!("Unexpected stack operation: {:?}", x),
                 },
                 'D' => match arg_pos {
