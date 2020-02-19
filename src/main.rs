@@ -213,8 +213,58 @@ impl AssemblyInterpreter {
         Ok(())
     }
 
-    fn process_instruction(&self, instruction: String) -> Result<(), AssemblyInterpreterError> {
+    fn process_instruction(&mut self, instruction: String) -> Result<(), AssemblyInterpreterError> {
+        println!("{}", instruction);
+        let mut opcode = String::new();
+        let mut instruction: Vec<char> = instruction.chars().collect();
+        let mut index = 0;
+        for i in 0..instruction.len() {
+            if instruction[i] == ' ' {
+                index = i + 1;
+                break;
+            }
+
+            opcode.push(instruction[i]);
+        }
+
+        let mut rands = &instruction[index..instruction.len()];
+
+        let MOVE: String = String::from("MOVE");
+
+        match opcode {
+            MOVE => self.move_op(rands),
+            _ => panic!("Not implemented!"),
+        }
+
         Ok(())
+    }
+
+    fn move_op(&mut self, rands: &[char]) {
+        use std::convert::TryInto;
+
+        let mut temp: isize = 0;
+        let mut i = 0;
+        for _ in 0..rands.len() {
+            if i >= rands.len() {
+                break;
+            }
+            match rands[i] {
+                '#' => {
+                    temp = (rands[i + 1].to_digit(10).unwrap()).try_into().unwrap();
+                    i += 2;
+                }
+                ',' => i += 1,
+                'D' => {
+                    match rands[i + 1] {
+                        '0' => self.d0 = Some(temp),
+                        '1' => self.d1 = Some(temp),
+                        n => panic!("Unknown register D{}", n),
+                    }
+                    i += 2;
+                }
+                x => panic!("Not implemented! {}", x),
+            }
+        }
     }
 }
 
