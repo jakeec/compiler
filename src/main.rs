@@ -107,9 +107,42 @@ impl<'a, R: Reader, W: Writer> Cradle<'a, R, W> {
         num.unwrap()
     }
 
+    fn multiply(&mut self) {
+        self.match_char(&'*');
+        self.emit_line(String::from("MULS (SP)+,D0"));
+        self.factor();
+    }
+
+    fn divide(&mut self) {
+        self.match_char(&'/');
+        self.emit_line(String::from("MOVE (SP)+,D1"));
+        self.emit_line(String::from("DIVS D1,D0"));
+        self.factor();
+    }
+
     fn term(&mut self) {
-        let num = self.get_num();
-        self.emit_line(format!("MOVE #{},D0", num));
+        // let num = self.get_num();
+        // self.emit_line(format!("MOVE #{},D0", num));
+        self.factor();
+        if self.lookahead != None && ['*', '/'].contains(&self.lookahead.unwrap()) {
+            match self.lookahead {
+                Some(c) => match c {
+                    '*' => self.multiply(),
+                    '/' => self.divide(),
+                    _ => {
+                        self.term();
+                        self.emit_line(String::from("MOVE D0,-(SP)"));
+                        self.expression();
+                    }
+                },
+                None => (),
+            }
+        }
+    }
+
+    fn factor(&mut self) {
+        let factor = self.get_num();
+        self.emit_line(format!("MOVE #{},D0", factor));
     }
 
     fn add(&mut self) {
