@@ -518,4 +518,23 @@ pub mod tests {
         println!("{:?}", asm_interp);
         assert_eq!(asm_interp.d0, Some(14));
     }
+
+    #[test]
+    fn given_complex_multiple_operator_expression_with_precedence_output_correct_answer_register_d0(
+    ) {
+        let mut asm_interp = AssemblyInterpreter::new();
+        let mut reader = TestReader::new();
+        reader
+            .read(ReaderArg::Raw(String::from("(1+8)/((3+7)+(5-6))")))
+            .unwrap();
+        let mut writer = TestWriter::new();
+        let mut cradle = Compiler::new(reader, &mut writer);
+        cradle.init();
+
+        cradle.expression();
+
+        asm_interp.eval(writer.output);
+        println!("{:?}", asm_interp);
+        assert_eq!(asm_interp.d0, Some(1));
+    }
 }
