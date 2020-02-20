@@ -159,9 +159,17 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         self.emit_line(String::from("NEG D0"));
     }
 
+    fn is_addop(&self, c: &char) -> bool {
+        ['+', '-'].contains(c)
+    }
+
     pub fn expression(&mut self) {
-        self.term();
-        while self.lookahead != None && ['+', '-'].contains(&self.lookahead.unwrap()) {
+        if self.is_addop(&self.lookahead.unwrap()) {
+            self.emit_line(String::from("CLR D0"));
+        } else {
+            self.term();
+        }
+        while self.lookahead != None && self.is_addop(&self.lookahead.unwrap()) {
             self.emit_line(String::from("MOVE D0,-(SP)"));
             match self.lookahead {
                 Some(c) => match c {
