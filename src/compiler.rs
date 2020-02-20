@@ -85,14 +85,24 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         x.is_digit(10)
     }
 
-    fn get_name(&mut self) -> char {
+    fn is_alphanum(&self, x: &char) -> bool {
+        self.is_alpha(x) || self.is_digit(x)
+    }
+
+    fn get_name(&mut self) -> String {
         if !self.is_alpha(&self.lookahead.unwrap()) {
             self.expected(String::from("Name"));
         }
 
-        let name = self.lookahead.unwrap();
-        self.get_char().unwrap();
-        name
+        let mut token = String::new();
+        while self.is_alphanum(&self.lookahead.unwrap()) {
+            token.push(self.lookahead.unwrap());
+            self.get_char().unwrap();
+        }
+
+        // let name = self.lookahead.unwrap();
+        // self.get_char().unwrap();
+        token
     }
 
     fn get_num(&mut self) -> char {
@@ -245,10 +255,10 @@ mod tests {
         let mut reader = TestReader::new();
         reader.read(ReaderArg::Raw(String::from("1"))).unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(0), writer.output);
     }
@@ -258,10 +268,10 @@ mod tests {
         let mut reader = TestReader::new();
         reader.read(ReaderArg::Raw(String::from("1 + 2"))).unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(1), writer.output);
     }
@@ -271,10 +281,10 @@ mod tests {
         let mut reader = TestReader::new();
         reader.read(ReaderArg::Raw(String::from("1-2"))).unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(2), writer.output);
     }
@@ -286,10 +296,10 @@ mod tests {
             .read(ReaderArg::Raw(String::from("1-2+3-4+7")))
             .unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(3), writer.output);
     }
@@ -299,10 +309,10 @@ mod tests {
         let mut reader = TestReader::new();
         reader.read(ReaderArg::Raw(String::from("2*3"))).unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(4), writer.output);
     }
@@ -312,10 +322,10 @@ mod tests {
         let mut reader = TestReader::new();
         reader.read(ReaderArg::Raw(String::from("2/3"))).unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(5), writer.output);
     }
@@ -327,10 +337,10 @@ mod tests {
             .read(ReaderArg::Raw(String::from("( 1+2 )")))
             .unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(6), writer.output);
     }
@@ -342,11 +352,26 @@ mod tests {
             .read(ReaderArg::Raw(String::from("( 1 + 2)/((3 + 4)+(5 - 6))")))
             .unwrap();
         let mut writer = TestWriter::new();
-        let mut cradle = Compiler::new(reader, &mut writer);
-        cradle.init();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
 
-        cradle.expression();
+        compiler.expression();
 
         assert_eq!(output(7), writer.output);
+    }
+
+    #[test]
+    fn given_multi_char_identifier() {
+        let mut reader = TestReader::new();
+        reader
+            .read(ReaderArg::Raw(String::from("jake = 10")))
+            .unwrap();
+        let mut writer = TestWriter::new();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
+
+        compiler.expression();
+
+        assert_eq!("\nMOVE jake(PC),D0", writer.output);
     }
 }
