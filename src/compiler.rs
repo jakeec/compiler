@@ -135,11 +135,24 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         }
     }
 
+    fn ident(&mut self) {
+        let name = self.get_name();
+        if self.lookahead.unwrap() == '(' {
+            self.match_char(&'(');
+            self.match_char(&')');
+            self.emit_line(format!("BSR {}", name));
+        } else {
+            self.emit_line(format!("MOVE {}(PC),D0", name));
+        }
+    }
+
     fn factor(&mut self) {
         if self.lookahead.unwrap() == '(' {
             self.match_char(&'(');
             self.expression();
             self.match_char(&')');
+        } else if self.is_alpha(&self.lookahead.unwrap()) {
+            self.ident();
         } else {
             let factor = self.get_num();
             self.emit_line(format!("MOVE #{},D0", factor));
