@@ -147,6 +147,7 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
     }
 
     fn factor(&mut self) {
+        self.whitespace();
         if self.lookahead.unwrap() == '(' {
             self.match_char(&'(');
             self.expression();
@@ -157,6 +158,7 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
             let factor = self.get_num();
             self.emit_line(format!("MOVE #{},D0", factor));
         }
+        self.whitespace();
     }
 
     fn add(&mut self) {
@@ -176,12 +178,22 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         ['+', '-'].contains(c)
     }
 
+    fn whitespace(&mut self) {
+        match self.lookahead {
+            Some(' ') => self.match_char(&' '),
+            _ => Ok(()),
+        };
+    }
+
     pub fn expression(&mut self) {
+        self.whitespace();
+
         if self.is_addop(&self.lookahead.unwrap()) {
             self.emit_line(String::from("CLR D0"));
         } else {
             self.term();
         }
+
         while self.lookahead != None && self.is_addop(&self.lookahead.unwrap()) {
             self.emit_line(String::from("MOVE D0,-(SP)"));
             match self.lookahead {
@@ -195,6 +207,18 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
                 None => (),
             }
         }
+
+        self.whitespace();
+    }
+
+    pub fn assignment(&mut self) {
+        let name = self.get_name();
+        self.whitespace();
+        self.match_char(&'=');
+        self.whitespace();
+        self.expression();
+        self.emit_line(format!("LEA {}(PC),A0", name));
+        self.emit_line(format!("MOVE D0,(A0)"));
     }
 }
 
@@ -232,7 +256,7 @@ mod tests {
     #[test]
     fn given_add_operation_output_add_instructions() {
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("1+2"))).unwrap();
+        reader.read(ReaderArg::Raw(String::from("1 + 2"))).unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Compiler::new(reader, &mut writer);
         cradle.init();
@@ -299,7 +323,9 @@ mod tests {
     #[test]
     fn given_parentheses_output_correct_assembly() {
         let mut reader = TestReader::new();
-        reader.read(ReaderArg::Raw(String::from("(1+2)"))).unwrap();
+        reader
+            .read(ReaderArg::Raw(String::from("( 1+2 )")))
+            .unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Compiler::new(reader, &mut writer);
         cradle.init();
@@ -313,7 +339,7 @@ mod tests {
     fn given_complex_arithmetic_output_correct_assembly() {
         let mut reader = TestReader::new();
         reader
-            .read(ReaderArg::Raw(String::from("(1+2)/((3+4)+(5-6))")))
+            .read(ReaderArg::Raw(String::from("( 1 + 2)/((3 + 4)+(5 - 6))")))
             .unwrap();
         let mut writer = TestWriter::new();
         let mut cradle = Compiler::new(reader, &mut writer);
