@@ -115,6 +115,7 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
 
         let num = self.lookahead;
         self.get_char().unwrap();
+        self.whitespace();
         num.unwrap()
     }
 
@@ -132,8 +133,6 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
     }
 
     fn term(&mut self) {
-        // let num = self.get_num();
-        // self.emit_line(format!("MOVE #{},D0", num));
         self.factor();
         if self.lookahead != None && ['*', '/'].contains(&self.lookahead.unwrap()) {
             self.emit_line(String::from("MOVE D0,-(SP)"));
@@ -160,7 +159,6 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
     }
 
     fn factor(&mut self) {
-        self.whitespace();
         if self.lookahead.unwrap() == '(' {
             self.match_char(&'(');
             self.expression();
@@ -171,7 +169,6 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
             let factor = self.get_num();
             self.emit_line(format!("MOVE #{},D0", factor));
         }
-        self.whitespace();
     }
 
     fn add(&mut self) {
@@ -205,8 +202,6 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
     }
 
     pub fn expression(&mut self) {
-        self.whitespace();
-
         if self.is_addop(&self.lookahead.unwrap()) {
             self.emit_line(String::from("CLR D0"));
         } else {
@@ -226,8 +221,6 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
                 None => (),
             }
         }
-
-        self.whitespace();
     }
 
     pub fn assignment(&mut self) {
@@ -387,7 +380,7 @@ mod tests {
     fn given_arbitray_whitespace_should_output_correctly() {
         let mut reader = TestReader::new();
         reader
-            .read(ReaderArg::Raw(String::from("b =   1 +   3    / 2")))
+            .read(ReaderArg::Raw(String::from("  b =   1 +   3    / 2")))
             .unwrap();
         let mut writer = TestWriter::new();
         let mut compiler = Compiler::new(reader, &mut writer);
