@@ -70,6 +70,7 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
     fn match_char(&mut self, x: &char) -> io::Result<()> {
         if self.lookahead.unwrap() == *x {
             self.get_char()?;
+            self.whitespace();
         } else {
             self.expected(format!("\"{}\"", x));
         }
@@ -99,6 +100,8 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
             token.push(self.lookahead.unwrap());
             self.get_char().unwrap();
         }
+
+        self.whitespace();
 
         // let name = self.lookahead.unwrap();
         // self.get_char().unwrap();
@@ -188,11 +191,17 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         ['+', '-'].contains(c)
     }
 
-    fn whitespace(&mut self) {
+    fn is_whitepace(&mut self) -> bool {
         match self.lookahead {
-            Some(' ') => self.match_char(&' '),
-            _ => Ok(()),
-        };
+            Some(c) => [' ', '\t'].contains(&c),
+            None => false,
+        }
+    }
+
+    fn whitespace(&mut self) {
+        while self.is_whitepace() {
+            self.get_char();
+        }
     }
 
     pub fn expression(&mut self) {
@@ -222,10 +231,9 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
     }
 
     pub fn assignment(&mut self) {
+        self.whitespace();
         let name = self.get_name();
-        self.whitespace();
         self.match_char(&'=');
-        self.whitespace();
         self.expression();
         self.emit_line(format!("LEA {}(PC),A0", name));
         self.emit_line(format!("MOVE D0,(A0)"));
@@ -370,8 +378,23 @@ mod tests {
         let mut compiler = Compiler::new(reader, &mut writer);
         compiler.init();
 
-        compiler.expression();
+        compiler.assignment();
 
-        assert_eq!("\nMOVE jake(PC),D0", writer.output);
+        assert_eq!(output(8), writer.output);
+    }
+
+    #[test]
+    fn given_arbitray_whitespace_should_output_correctly() {
+        let mut reader = TestReader::new();
+        reader
+            .read(ReaderArg::Raw(String::from("b =   1 +   3    / 2")))
+            .unwrap();
+        let mut writer = TestWriter::new();
+        let mut compiler = Compiler::new(reader, &mut writer);
+        compiler.init();
+
+        compiler.assignment();
+
+        assert_eq!(output(9), writer.output);
     }
 }
