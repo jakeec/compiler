@@ -13,6 +13,6 @@ fn main() -> io::Result<()> {
     let mut writer = StdoutWriter {};
     let mut cradle = Compiler::new(reader, &mut writer);
     cradle.init();
-    cradle.assignment();
+    cradle.program();
     Ok(())
 }

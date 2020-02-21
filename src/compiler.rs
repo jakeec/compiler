@@ -9,6 +9,7 @@ pub struct Compiler<'a, R: Reader, W: Writer> {
     counter: usize,
     reader: R,
     writer: Box<&'a mut W>,
+    l_count: usize,
 }
 
 impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
@@ -19,6 +20,7 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
             counter: 0,
             reader: reader,
             writer: Box::new(writer),
+            l_count: 0,
         }
     }
 
@@ -231,6 +233,41 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         self.emit_line(format!("LEA {}(PC),A0", name));
         self.emit_line(format!("MOVE D0,(A0)"));
     }
+
+    pub fn statement(&mut self) {
+        self.assignment();
+        self.match_char(&';');
+    }
+
+    pub fn block(&mut self) {
+        self.match_char(&'{');
+        while self.lookahead.unwrap() != '}' {
+            self.statement();
+        }
+        self.match_char(&'}');
+    }
+
+    pub fn program(&mut self) {
+        self.whitespace();
+        self.block();
+    }
+
+    fn new_label(&mut self) -> String {
+        let label = format!("L{:0>2}", self.l_count);
+        self.l_count += 1;
+        return label;
+    }
+
+    fn post_label(&mut self) {
+        let label = self.new_label();
+        self.emit(label);
+    }
+
+    fn keyword(&mut self, keyword: &str) {
+        for c in keyword.chars() {}
+    }
+
+    fn do_if(&mut self) {}
 }
 
 #[cfg(test)]
