@@ -267,7 +267,28 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
         for c in keyword.chars() {}
     }
 
-    fn do_if(&mut self) {}
+    fn condition(&mut self) {}
+
+    fn match_token(&mut self, token: &str) {
+        if !(self.get_name() == String::from("if")) {
+            self.expected(String::from(
+                "Expected if-else block to start with if keyword",
+            ));
+        }
+
+        let l = self.new_label();
+        self.condition();
+        self.emit_line(format!("BEQ {}", l));
+        self.block();
+
+        if !(self.get_name() == String::from("else")) {
+            self.expected(String::from(
+                "Expected if-else block to start with if keyword",
+            ));
+        }
+
+        self.post_label();
+    }
 }
 
 #[cfg(test)]
