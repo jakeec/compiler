@@ -1,5 +1,7 @@
+use std::fs;
 use std::io;
 
+#[derive(Debug)]
 pub enum ReaderArg {
     Raw(String),
     FilePath(String),
@@ -12,6 +14,33 @@ pub struct StdinReader {
 
 pub struct TestReader {
     buffer: Vec<char>,
+}
+
+pub struct FileReader {
+    buffer: Vec<char>,
+}
+
+impl FileReader {
+    pub fn new() -> Self {
+        Self { buffer: Vec::new() }
+    }
+}
+
+impl Reader for FileReader {
+    fn read(&mut self, arg: ReaderArg) -> io::Result<()> {
+        match arg {
+            ReaderArg::FilePath(file_path) => {
+                self.buffer = fs::read_to_string(file_path).unwrap().chars().collect()
+            }
+            x => panic!("Expected FilePath argument, found {:?}", x),
+        }
+
+        Ok(())
+    }
+
+    fn get_buffer(&self) -> Vec<char> {
+        self.buffer.clone()
+    }
 }
 
 impl StdinReader {

@@ -249,7 +249,7 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
 
     pub fn program(&mut self) {
         self.whitespace();
-        self.block();
+        self.do_if();
     }
 
     fn new_label(&mut self) -> String {
@@ -260,34 +260,38 @@ impl<'a, R: Reader, W: Writer> Compiler<'a, R, W> {
 
     fn post_label(&mut self) {
         let label = self.new_label();
-        self.emit(label);
+        self.emit(format!("{}: ", label));
     }
 
     fn keyword(&mut self, keyword: &str) {
         for c in keyword.chars() {}
     }
 
-    fn condition(&mut self) {}
+    fn condition(&mut self) {
+        self.emit_line(String::from("CONDITION"));
+    }
 
-    fn match_token(&mut self, token: &str) {
+    fn do_if(&mut self) {
         if !(self.get_name() == String::from("if")) {
             self.expected(String::from(
                 "Expected if-else block to start with if keyword",
             ));
         }
 
-        let l = self.new_label();
         self.condition();
-        self.emit_line(format!("BEQ {}", l));
+        let l1 = self.new_label();
+        let mut l2 = l1.clone();
+        self.emit_line(format!("BEQ {}", l1));
         self.block();
 
-        if !(self.get_name() == String::from("else")) {
-            self.expected(String::from(
-                "Expected if-else block to start with if keyword",
-            ));
+        if (self.get_name() == String::from("else")) {
+            l2 = self.new_label();
+            self.emit_line(format!("BRA {}", l2));
+            self.post_label();
+            self.block();
         }
 
-        self.post_label();
+        self.emit_line(format!("{}: ", l2));
     }
 }
 
